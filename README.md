@@ -13,10 +13,10 @@ with a SQLite database to simulate ingesting transaction snapshots via a mocked 
 ## Run the App
 1. Open a terminal and navigate to the TransactionIngest directory.
 1. Run the following command to execute the application:
-    ```sh
+    ```
       dotnet run
     ```
-    The SnapShotService GetSnapShotTransactions method returns transaction shapshot json.  Default data is generated at the end of the method.  Select a different mock data method to modify application runs.
+    The SnapShotService.GetSnapShotTransactions() method returns transaction shapshot JSON.  Default data is generated at the end of the method.  Select a different mock data method to modify application runs.
 
 
 ## Run the Tests in Visual Studio Test Explorer
@@ -27,11 +27,11 @@ with a SQLite database to simulate ingesting transaction snapshots via a mocked 
 
 
 ## Configuration
-1. appsettings.json:
+1. **appsettings.json:**
     - SQLite connection string for the local database.
     - Mock API URL
    
-1. Debug tracing (via Console.WriteLines) for... 
+1. **Debug tracing** (via Console.WriteLines) for... 
     - Transactions
     - Audit Log
     - Status Types table
@@ -39,31 +39,31 @@ with a SQLite database to simulate ingesting transaction snapshots via a mocked 
     The Program.cs Main method has 3 boolean flags to enable/disable debug tracing. By default these flags are set to false.
     - displayTransactions - tracing for transaction snapshots in Program.cs and in TransactionService.cs
     - The TransactionService Upsert method class has two additional boolean flags for tracing the audit log and status types tables.
-    ```sh
+    ```
       Upsert(string jsonSnapShot, bool displayTransactions = false, bool displayAuditLog = false, bool displayStatusTypes = false)
     ```
     - Set the display flag values in the Program.cs file to true to enable tracing for the respective tables.
 
- 1. Delete the SQLite database file to reset the database state for testing purposes.  Comment out the following line in the Program.cs Main method.
-    ```sh
+ 1. **Delete the SQLite database** to reset the database state for testing purposes.  Comment out the following line in the Program.cs Main method.
+    ```
       db.Database.EnsureDeleted();
     ```
 
 
 ## Coding Approach
 ### Models
-1. Transaction - represents a financial transaction
-1. AuditLog - represents an audit log entry for transactions 
-1. StatusType - represents a transaction status type
+1. **Transaction** - represents a financial transaction
+1. **StatusType** - represents a transaction status type
+1. **AuditLog** - represents an audit log entry for transactions 
 
 
 ### Snapshot Transaction Ingest Process
 The Program.cs makes calls to 2 service methods.  
-1. SnapShotService.GetSnapShotTransactions() - simulates an API call to return transaction snapshot json data.  The method has multiple mock data methods to select from.
-    - Code to return a json from a sample API call has been commented out.  If tracing is on the app will display the json, however, the TransactionService.Upsert() is not implemented to handle this json.
+1. SnapShotService.GetSnapShotTransactions() - simulates an API call to return transaction snapshot JSON data.  The method has multiple mock data methods to select from.
+    - Code to return a JSON from a sample API call has been commented out.  If tracing is on the app will display the JSON, however, the TransactionService.Upsert() is not implemented to handle this JSON.
 
-1. TransactionService.Upsert() - takes the transaction snapshot json and performs an upsert to the database.  The method also has optional boolean parameters to enable debug tracing for transactions, audit log, and status types tables.
-    - The method is implemented to handle the json returned from the mock data methods in SnapShotService.GetSnapShotTransactions().
+1. TransactionService.Upsert() - takes the transaction snapshot JSON and performs an upsert to the database.  The method also has optional boolean parameters to enable debug tracing for transactions, audit log, and status types tables.
+    - The method is implemented to handle the JSON returned from the mock data methods in SnapShotService.GetSnapShotTransactions().
     - Only transactions with a time stamp in the last 24 hours will be processed.
     - Based on a Transaction.Id lookup, the transaction will either be inserted as a new record or updated if the transaction already exists in the database.  
     - Each transaction's card number is masked.
@@ -76,7 +76,7 @@ The Program.cs makes calls to 2 service methods.
 - Auditing takes place in the AppDbContext SaveChanges() method.  The method checks for any added or modified Transaction entities and creates a corresponding AuditLog entry for each change.
 - Display of the audit log is controlled by the displayAuditLog boolean flag in the TransactionService.Upsert() method.
 
-- 
+
 ### Mock JSON Data
 The SnapShotService.GetSnapShotTransactions() method has multiple mock data methods to select from.  By default, the GetMockSnapShotTransactions() method is selected which generates random transaction snapshot data.  To use a different set of mock data, simply change the return statement in the GetSnapShotTransactions() method to the desired mock data method.
 
