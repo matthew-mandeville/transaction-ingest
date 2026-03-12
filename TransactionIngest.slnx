@@ -3,6 +3,6 @@
     <File Path=".gitignore" />
     <File Path="README.md" />
   </Folder>
-  <Project Path="TransactionIngest.Tests/TransactionIngest.Tests.csproj" />
   <Project Path="TransactionIngest/TransactionIngest.csproj" />
+  <Project Path="TransactionIngest.Tests/TransactionIngest.Tests.csproj" />
 </Solution>
