@@ -28,10 +28,11 @@ namespace TransactionIngest.Services
             //return responseBody;
 
 
-            // mock snapshot data
-            //return Get_Coding_Exercise_Sample_Json();
-            //return Get_Coding_Exercise_Sample_Json_With_Duplicate();
-            return GetOneTransaction();
+            // Set mock snapshot data...
+
+            return Get_Coding_Exercise_Sample_Json();
+            //return Get_Coding_Exercise_Sample_Json_With_Duplicates();
+            //return GetOneTransaction();
             //return GetMultipleTransactions(3);
         }
 
@@ -59,7 +60,7 @@ namespace TransactionIngest.Services
             return JsonSerializer.Serialize(transactionList, new JsonSerializerOptions { WriteIndented = true });
         }
 
-        private string Get_Coding_Exercise_Sample_Json_With_Duplicate()
+        private string Get_Coding_Exercise_Sample_Json_With_Duplicates()
         {
             var transactionList = new List<Transaction>
             {

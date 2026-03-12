@@ -23,6 +23,7 @@ namespace TransactionIngest.Tests
             _context = _fixture.CreateContext();
             _service = new TransactionService(_context);
 
+            _context.Database.EnsureDeleted();
             _context.Database.EnsureCreated();
 
         }
@@ -79,11 +80,53 @@ namespace TransactionIngest.Tests
         [Fact]
         public async Task Upsert_Multiple_Transactions_No_Duplicates()
         {
+            var transactionList = GetMultipleTransactionsNoDuplicates();
+            var json = JsonSerializer.Serialize(transactionList);
+
+            await _service.Upsert(json);
+
+            var firstTransaction = await _context.Transactions.Where(t => t.Id == transactionList[0].Id).FirstOrDefaultAsync();
+            var secondTransaction = await _context.Transactions.Where(t => t.Id == transactionList[1].Id).FirstOrDefaultAsync();
+
+            Assert.Equal(transactionList[0].Id, firstTransaction.Id);
+            Assert.Equal(transactionList[1].Id, secondTransaction.Id);
+            Assert.NotEqual(firstTransaction.Id, secondTransaction.Id);
+            Assert.Equal((int)StatusTypeValues.Active, firstTransaction.StatusTypeId);
         }
 
         [Fact]
         public async Task Upsert_Multiple_Transactions_With_Duplicates()
         {
+            // 1st and 3rd transactions have the same id
+            var transactionList = GetMultipleTransactionsWithDuplicates();
+            var json = JsonSerializer.Serialize(transactionList);
+
+            await _service.Upsert(json);
+
+            var firstTransaction = await _context.Transactions.Where(t => t.Id == transactionList[0].Id).FirstOrDefaultAsync();
+            
+            Assert.Equal(transactionList[0].Id, firstTransaction.Id);
+            Assert.NotEqual(transactionList[0].Amount, firstTransaction.Amount);
+            Assert.NotEqual(transactionList[0].ProductName, firstTransaction.ProductName);
+            Assert.Equal(transactionList[2].Amount, firstTransaction.Amount);
+            Assert.Equal(transactionList[2].ProductName, firstTransaction.ProductName);
+        }
+
+        [Fact]
+        public async Task Upsert_Multiple_Transactions_Unordered()
+        {
+            var transactionList = GetMultipleTransactionsWithoutSequentialIds();
+            var json = JsonSerializer.Serialize(transactionList);
+
+            await _service.Upsert(json);
+
+            var firstTransaction = await _context.Transactions.Where(t => t.Id == transactionList[0].Id).FirstOrDefaultAsync();
+            var secondTransaction = await _context.Transactions.Where(t => t.Id == transactionList[1].Id).FirstOrDefaultAsync();
+            var thirdTransaction = await _context.Transactions.Where(t => t.Id == transactionList[2].Id).FirstOrDefaultAsync();
+
+            Assert.Equal(transactionList[0].Amount, firstTransaction.Amount);
+            Assert.Equal(transactionList[1].ProductName, secondTransaction.ProductName);
+            Assert.Equal(transactionList[2].LocationCode, thirdTransaction.LocationCode);
         }
 
         [Fact]
@@ -100,7 +143,6 @@ namespace TransactionIngest.Tests
 
             Assert.Equal(transactionsBefore.Count, transactionsAfter.Count);
         }
-
 
 
         [Fact]
@@ -223,6 +265,37 @@ namespace TransactionIngest.Tests
                 GetTransactionTestData()
             };
 
+        }
+
+        private List<Transaction> GetMultipleTransactionsNoDuplicates()
+        {
+            var timeStamp = DateTime.UtcNow;
+
+            return new List<Transaction>
+            {
+                GetTransactionTestData(timeStamp, 1, "123456789", "ST-1", 100m, "Lamp"),
+                GetTransactionTestData(timeStamp, 2, "111111111", "ST-2", 50m, "Headset"),
+            };
+        }
+
+        private List<Transaction> GetMultipleTransactionsWithDuplicates()
+        {
+            return new List<Transaction>
+            {
+                GetTransactionTestData(DateTime.UtcNow, 1, "123456789", "ST-1", 100m, "Lamp"),
+                GetTransactionTestData(DateTime.UtcNow, 2, "111111111", "ST-2", 50m, "Headset"),
+                GetTransactionTestData(DateTime.UtcNow, 1, "123456789", "ST-1", 120m, "More Expensive Lamp"),
+            };
+        }
+
+        private List<Transaction> GetMultipleTransactionsWithoutSequentialIds()
+        {
+            return new List<Transaction>
+            {
+                GetTransactionTestData(DateTime.UtcNow, 21, "123456789", "ST-21", 18.50m, "Printer Paper"),
+                GetTransactionTestData(DateTime.UtcNow, 9, "111111111", "ST-9", 160.99m, "Monitor"),
+                GetTransactionTestData(DateTime.UtcNow, 55, "123456789", "ST-55", 500m, "Chair"),
+            };
         }
 
         #endregion

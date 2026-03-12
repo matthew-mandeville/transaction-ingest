@@ -41,7 +41,6 @@ namespace TransactionIngest.Services
 
         public async Task Upsert(string jsonSnapShot, bool displayTransactions = false, bool displayAuditLog = false, bool displayStatusTypes = false)
         {
-            var operationDisplay = string.Empty;
             var transactionList = System.Text.Json.JsonSerializer.Deserialize<List<Transaction>>(jsonSnapShot);
 
             await using var dbTransaction = await _context.Database.BeginTransactionAsync();
@@ -70,45 +69,19 @@ namespace TransactionIngest.Services
                                 existingTransaction.Amount = transaction.Amount;
                                 existingTransaction.TimeStamp = DateTime.UtcNow;
                                 _context.Transactions.Update(existingTransaction);
-
-                                operationDisplay = "Updated";
-
-                                var upsertedId = transaction.Id;
-
-                                var upsertedTransaction = await _context.Transactions.FirstOrDefaultAsync(x => x.Id == upsertedId);
-                                if (upsertedTransaction != null)
-                                {
-                                    if (displayTransactions)
-                                        Console.WriteLine($"{operationDisplay}:  {upsertedTransaction.Id} - Card Number: {upsertedTransaction.CardNumber} - Product Name: {upsertedTransaction.ProductName} - Status Type: {upsertedTransaction.StatusTypeId}");
-                                }
                             }
                             else
                             {
                                 // Insert new transaction
                                 transaction.CardNumber = MaskCardNumber(transaction.CardNumber);
                                 _context.Transactions.Add(transaction);
-
-                                operationDisplay = "Inserted";
-
-                                var upsertedId = transaction.Id;
-
-                                var upsertedTransaction = await _context.Transactions.FirstOrDefaultAsync(x => x.Id == upsertedId);
-                                if (upsertedTransaction != null)
-                                {
-                                    if (displayTransactions)
-                                        Console.WriteLine($"{operationDisplay}:  {upsertedTransaction.Id} - Card Number: {upsertedTransaction.CardNumber} - Product Name: {upsertedTransaction.ProductName} - Status Type: {upsertedTransaction.StatusTypeId}");
-                                }
                             }
                         }
-
                         await _context.SaveChangesAsync();
                     }
 
-                    //DateTime cutoffTime = DateTime.UtcNow.AddHours(-24);
-                    //RevokeTransactions(transactionList, cutoffTime);
                     RevokeTransactions(transactionList, displayTransactions);
 
-                    //FinalizeTransactions(cutoffTime);
                     FinalizeTransactions(displayTransactions);
 
                     DisplayDataToConsole(displayTransactions, displayAuditLog, displayStatusTypes);
@@ -134,21 +107,16 @@ namespace TransactionIngest.Services
             // Build a list of ids from the incoming transactions and use that list for the EF Core query.
             var ids = transactionList.Select(t => t.Id).ToList();
 
-            //var alltrans = _db.Transactions.ToListAsync();
-
             // Query transactions whose Id is present in the incoming list.
             var transactionsToRevoke = _context.Transactions.Where(t => !ids.Contains(t.Id) && t.StatusTypeId == (int)StatusTypeValues.Active && t.TimeStamp > cutoffTime).ToList();
 
             foreach (var transaction in transactionsToRevoke)
             {
-                //if (transactionList.Any(trans => trans.Id == transaction.Id))
-                //{
-                    transaction.StatusTypeId = (int)StatusTypeValues.Revoked;
+                transaction.StatusTypeId = (int)StatusTypeValues.Revoked;
                 _context.Transactions.Update(transaction);
 
                     if (displayTransactions)
                         Console.WriteLine($"\n\nRevoked: {transaction.Id} - Card Number: {transaction.CardNumber} - Product Name: {transaction.ProductName} - Status Type: {transaction.StatusTypeId}");
-                //}
             }
             _context.SaveChanges();
         }
@@ -156,11 +124,6 @@ namespace TransactionIngest.Services
         public async Task FinalizeTransactions(bool displayTransactions = false)
         {
             var cutoffTime = DateTime.UtcNow.AddHours(-24);
-            //if (DateTime.UtcNow - cutoffTime < TimeSpan.FromHours(24))
-            //{
-            //    Console.WriteLine("Cutoff time is invalid. No transactions will be finalized.");
-            //    return;
-            //}
 
             var transactionsToFinalize = _context.Transactions.Where(t => t.TimeStamp < cutoffTime).ToList();
             foreach (var transaction in transactionsToFinalize)
@@ -184,12 +147,14 @@ namespace TransactionIngest.Services
                 var transactions = _context.Transactions.ToList();
                 transactions.ForEach(l => Console.WriteLine($"{l.Id}: {l.LocationCode} - {l.CardNumber} - {l.ProductName} - {l.Amount} - {l.TimeStamp}"));
             }
+
             if (displayAuditLog)
             {
                 Console.WriteLine($"\n\nAUDIT LOG *******");
                 var logs = _context.AuditLogs.ToList();
                 logs.ForEach(l => Console.WriteLine($"{l.Timestamp}: {l.EntityName} - {l.Action} - {l.Changes}\n"));
             }
+
             if (displayStatusTypes)
             {
                 Console.WriteLine($"\nStatus Types *******");

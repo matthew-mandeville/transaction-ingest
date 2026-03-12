@@ -6,8 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 class Program
 {
-    //private static readonly HttpClient client = new HttpClient();
-
     static async Task Main(string[] args)
     {
         
@@ -30,14 +28,14 @@ class Program
         // Ensure database created
         using (var scope = provider.CreateScope())
         {
-            var displayTransactions = true;
+            var displayTransactions = false;
 
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var snapShotService = scope.ServiceProvider.GetRequiredService<SnapShotService>();
             var transactionService = scope.ServiceProvider.GetRequiredService<TransactionService>();
 
             // setup db
-            //db.Database.EnsureDeleted(); -- comment out to reset the db
+            //db.Database.EnsureDeleted(); // -- comment out to reset the db
             db.Database.EnsureCreated();
 
             var json = await snapShotService.GetSnapShotTransactions();
@@ -52,8 +50,7 @@ class Program
                 Console.WriteLine("Creating transaction(s)...");
             }
 
-            await transactionService.Upsert(json, displayTransactions, true, true);
-            //await transactionService.Upsert(json, displayTransactions);
+            await transactionService.Upsert(json, displayTransactions, false, false);
 
             if (displayTransactions)
             {
