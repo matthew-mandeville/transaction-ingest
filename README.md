@@ -11,8 +11,13 @@ with a SQLite database to simulate ingesting transaction snapshots via a mocked 
 
 
 ## Run the App
-1. Open a terminal and navigate to the TransactionIngest directory.
-1. Run the following command to execute the application:
+1. Clone the repository and open the solution in Visual Studio.
+1. Right click on the TransactionIngest project and select "Set as Startup Project".
+    - Note: I noticed downloading the repo from Github was working differently than my local repo.  This will fix the issue.
+1. To build and run the application
+    - Hit F5 or 
+    - Select Debug > Start Debugging or
+    - Run the following command:
     ```
       dotnet run
     ```
